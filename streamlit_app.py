@@ -125,7 +125,7 @@ def get_final_summary(client, summary_markdown):
                 "Tu tarea es seguir las instrucciones que te doy a continuación para extraer los datos de manera precisa y sin inventar información.\n"
                 "\n"
                 "Consideraciones importantes:\n"
-                "1. Si el resumen no tiene información para un apartado, usa 'No hay información'.\n"
+                "1. Si el resumen no tiene información para un apartado, no incluyas ese apartado.\n"
                 "2. Si algún valor entre corchetes se encuentra en el markdown, reemplázalo con la información correcta, si no existe, escribe N/A y modifica el texto para que tenga sentido.\n"
                 "3. El formato de respuesta debe seguir exactamente el esquema que te proporciono. No alteres ni modifiques el formato, solo rellena los campos con la información extraída del markdown.\n"
                 "4. Si hay datos de varias instancias o personas, incluye solo una si es común a todas ellas, en caso contrario, incluir todas ellas en una lista. Para ello, añade el apartado varias veces.\n"
