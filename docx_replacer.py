@@ -3,7 +3,6 @@ from docx import Document
 import pandas as pd
 from io import BytesIO
 import streamlit as st
-from docx2pdf import convert
 import tempfile
 import os
 
@@ -19,23 +18,6 @@ registered_doctors = [
         "number": "Médico colegiado Nº 987 de Sevilla",
     },
 ]
-
-# Auxiliar Functions
-def generate_pdf_with_docx2pdf(doc):
-    import pythoncom
-    pythoncom.CoInitialize()  # Manually initialize COM
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        docx_path = os.path.join(tmpdir, "temp.docx")
-        pdf_path = os.path.join(tmpdir, "temp.pdf")
-
-        doc.save(docx_path)
-        convert(docx_path, pdf_path)
-
-        with open(pdf_path, "rb") as f:
-            pdf_bytes = f.read()
-
-    return pdf_bytes
 
 # Core Functions - - - -
 @st.dialog("Generar Informe Médico", width="large")
@@ -68,18 +50,6 @@ def preview_file(final_df, default_open_status):
 
     # Create a list of doctor names for the dropdown
     doctor_names = [doc["doctor_name"] for doc in registered_doctors]
-
-    # with col1:
-    #     # Selectbox for choosing the doctor
-    #     doctor = st.selectbox("Doctor", doctor_names)
-    # with col2:
-    #     # Selectbox for choosing the column to extract from the DataFrame
-    #     selected_column = st.selectbox("Columna a extraer", column_indices)
-
-    # # Text inputs for additional information required in the report
-    # expedient_number = st.text_input("Número de Expediente")
-    # documentation_given = st.text_input("Documentación Aportada")
-    # documentation_not_given = st.text_input("Documentación no Aportada")
 
     # Initialize session state for tracking changes
     if "doctor" not in st.session_state:
@@ -225,31 +195,15 @@ def fill_and_offer_multiple_downloads(
     buffer.seek(0)
 
 
-    pdf_bytes = generate_pdf_with_docx2pdf(doc)
-    if pdf_bytes != "":
         # Download button for DOCX format
-        with col1:
-            file_name = (
-                f"informe_col{column_index}.docx"  # Dynamic file name based on column index
-            )
-            st.download_button(
-                label=f"📄 Descargar Informe en formato .docx",
-                data=buffer,
-                file_name=file_name,
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                use_container_width=True,
-            )
-
-        # Generate PDF
-        with col2:
-            
-            file_name = f"informe_col{column_index}.pdf"  # Dynamic file name based on column index
-            st.download_button(
-                label="📄 Descargar Informe en formato .pdf",
-                data=pdf_bytes,
-                file_name=file_name,
-                mime="application/pdf",
-                use_container_width=True,
-            )
-    else:
-        st.title("Preparado informe")
+    with col1:
+        file_name = (
+            f"informe_col{column_index}.docx"  # Dynamic file name based on column index
+        )
+        st.download_button(
+            label=f"📄 Descargar Informe en formato .docx",
+            data=buffer,
+            file_name=file_name,
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            use_container_width=True,
+        )
