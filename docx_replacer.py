@@ -3,8 +3,15 @@ from docx import Document
 import pandas as pd
 from io import BytesIO
 import streamlit as st
+from docx.shared import Inches
 import tempfile
 import os
+from PIL import Image
+import io
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+import re
+
+from utils import get_image_from_gdrive
 
 
 # List of registered doctors with their names and professional numbers
@@ -12,12 +19,17 @@ registered_doctors = [
     {
         "doctor_name": "Antonio Buzido Jimenez",
         "number": "Médico colegiado Nº 9800 de Sevilla",
+        "signature_url": "https://drive.google.com/file/d/1uiMxUdsYmBYXyJwKSya7J0NAZsShmNYK/view",
+        "signature_size":2
     },
     {
         "doctor_name": "Dra. Paz Marian Casal",
         "number": "Médico colegiado Nº 987 de Sevilla",
+        "signature_url": "https://drive.google.com/file/d/1uiMxUdsYmBYXyJwKSya7J0NAZsShmNYK/view",
+        "signature_size":2
     },
 ]
+
 
 # Core Functions - - - -
 @st.dialog("Generar Informe Médico", width="large")
@@ -37,7 +49,7 @@ def preview_file(final_df, default_open_status):
 
     # Simple toggle using session_state
     st.session_state.show_download = default_open_status
-    
+
     col1, col2 = st.columns([2, 2])  # Adjust width ratio for the columns
 
     # File uploader for the user to select a Word template
@@ -68,13 +80,23 @@ def preview_file(final_df, default_open_status):
         doctor = st.selectbox("Doctor", doctor_names)
     # Selectbox for choosing the column to extract from the DataFrame
     with col2:
-        selected_column = st.selectbox("Columna a extraer", column_indices)
-        
-    # Text inputs for additional information required in the report
-    expedient_number = st.text_input("Número de Expediente")
-    documentation_given = st.text_input("Documentación Aportada")
-    documentation_not_given = st.text_input("Documentación no Aportada")
+        selected_column = st.selectbox(
+            "Seleccione una columna", column_indices, index=len(column_indices) - 1
+        )
 
+    (col1,) = st.columns([2])  # Adjust width ratio for the columns
+    # Text inputs for additional information required in the report
+    with col1:
+        expedient_number = st.text_input("Número de Expediente")
+
+    col1, col2 = st.columns([2, 2])  # Adjust width ratio for the columns
+    with col1:
+        documentation_given = st.text_area("Documentación Aportada", height=68)
+    with col2:
+        documentation_not_given = st.text_area("Documentación no Aportada", height=68)
+
+    col1, col2 = st.columns([2, 1])  # Adjust width ratio for the columns
+    
     # Check if any input has changed
     if doctor != st.session_state.doctor:
         st.session_state.show_download = False
@@ -96,7 +118,6 @@ def preview_file(final_df, default_open_status):
         st.session_state.show_download = False
         st.session_state.documentation_not_given = documentation_not_given
 
-
     # Find the selected doctor in the list of registered doctors
     matched_doctor = next(
         (doc for doc in registered_doctors if doc["doctor_name"] == doctor), "N/A"
@@ -112,21 +133,19 @@ def preview_file(final_df, default_open_status):
         "{{Documentación no aportada}}": documentation_not_given,
     }
 
-
-    
     if st.button("Procesar información", use_container_width=True):
         st.session_state.show_download = True
-    
+
     # Trigger document generation and offer download options if the template is uploaded
     if st.session_state.show_download == True:
         if template_file:
             fill_and_offer_multiple_downloads(
-                final_df, selected_column, template_file, additional_documentation
+                final_df, selected_column, template_file, additional_documentation, matched_doctor["signature_url"], matched_doctor["signature_size"]
             )
 
 
 def fill_and_offer_multiple_downloads(
-    df: pd.DataFrame, column_index: int, template_path: str, extra_information: dict
+    df: pd.DataFrame, column_index: int, template_path: str, extra_information: dict, signature_url, signature_size
 ):
     """
     Fills a Word template with data from a given DataFrame column and shows download buttons for both DOCX and PDF formats.
@@ -166,44 +185,86 @@ def fill_and_offer_multiple_downloads(
             replacements["{{Fecha Siniestro}}"] = fecha_value.split(" Hora: ")[0]
             replacements["{{Hora}}"] = fecha_value.split(" Hora: ")[1]
 
+    if "Numero de documento" in column_data and pd.notnull(
+        column_data["Numero de documento"]
+    ):
+        file_name = column_data["Numero de documento"]
+
+    if "Nombre y apellidos" in column_data and pd.notnull(
+        column_data["Nombre y apellidos"]
+    ):
+        file_name = f"{file_name} {column_data['Nombre y apellidos']}"
+
+    if "{{Expediente}}" in extra_information:
+        file_name = f"{file_name} {extra_information['{{Expediente}}']}"
+
     # Load the template Word document
     doc = Document(template_path)
 
-    # Replace the placeholders in the paragraphs of the document
+
+
+    all_replacements = {**replacements, **extra_information}
+    
+    all_replacements = {
+        (key.strip() if key.strip().startswith("{{") and key.strip().endswith("}}")
+        else f"{{{{{key.strip()}}}}}"): val
+        for key, val in all_replacements.items()
+    }
+    
     for para in doc.paragraphs:
-        for key, val in replacements.items():
-            if key in para.text:
-                para.text = para.text.replace(key, val)
-        for key, val in extra_information.items():
-            if key in para.text:
-                para.text = para.text.replace(key, val)
+        for run in para.runs:
+            for key, val in all_replacements.items():
+                if key in run.text and isinstance(val, str):
+                    run.text = run.text.replace(key, val)
+
+    
 
     # Replace placeholders in the tables of the document
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
-                for key, val in replacements.items():
-                    if key in cell.text:
-                        cell.text = cell.text.replace(key, val)
-                for key, val in extra_information.items():
-                    if key in cell.text:
-                        cell.text = cell.text.replace(key, val)
+                for para in cell.paragraphs:
+                    for run in para.runs:
+                        for key, val in all_replacements.items():
+                            if key in run.text and isinstance(val, str):
+                                run.text = run.text.replace(key, val)
+    
+    # Replace images
+    for i, para in enumerate(doc.paragraphs):
+        if "{{signature image}}" in para.text:
+            try:
+                # 1. Eliminar el párrafo con el placeholder
+                p = para._element
+                parent = p.getparent()
+                index = parent.index(p)
+                parent.remove(p)
 
+                # 2. Crear nuevo párrafo con la imagen alineada a la derecha
+                new_paragraph = doc.add_paragraph()
+                new_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                signature_bytes = get_image_from_gdrive(signature_url)
+                signature_bytes.seek(0)
+                run = new_paragraph.add_run()
+                run.add_picture(signature_bytes, width=Inches(signature_size))
+
+                # 3. Insertar el nuevo párrafo en la posición original
+                parent.insert(index, new_paragraph._element)
+            except (AttributeError, ValueError, FileNotFoundError) as e:
+                st.warning("⚠️ No se pudo cargar la imagen de la firma. Asegúrate de que el enlace sea válido.")
+        
+            break
+    
     # Save the modified document to an in-memory buffer
     buffer = BytesIO()
     doc.save(buffer)
     buffer.seek(0)
 
-
-        # Download button for DOCX format
+    # Download button for DOCX format
     with col1:
-        file_name = (
-            f"informe_col{column_index}.docx"  # Dynamic file name based on column index
-        )
         st.download_button(
             label=f"📄 Descargar Informe en formato .docx",
             data=buffer,
-            file_name=file_name,
+            file_name=f"{file_name}.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             use_container_width=True,
         )
