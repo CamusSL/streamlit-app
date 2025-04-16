@@ -20,7 +20,7 @@ registered_doctors = [
         "doctor_name": "Antonio Buzido Jimenez",
         "number": "Médico colegiado Nº 9800 de Sevilla",
         "signature_url": "https://drive.google.com/file/d/1uiMxUdsYmBYXyJwKSya7J0NAZsShmNYK/view",
-        "signature_size":2
+        "signature_size":1
     },
     {
         "doctor_name": "Dra. Paz Marian Casal",
@@ -200,34 +200,42 @@ def fill_and_offer_multiple_downloads(
 
     # Load the template Word document
     doc = Document(template_path)
-
-
-
-    all_replacements = {**replacements, **extra_information}
     
-    all_replacements = {
-        (key.strip() if key.strip().startswith("{{") and key.strip().endswith("}}")
-        else f"{{{{{key.strip()}}}}}"): val
-        for key, val in all_replacements.items()
-    }
     
     for para in doc.paragraphs:
-        for run in para.runs:
-            for key, val in all_replacements.items():
-                if key in run.text and isinstance(val, str):
-                    run.text = run.text.replace(key, val)
-
+        for key, val in replacements.items():
+            if key in para.text:
+                para.text = para.text.replace(key, val)
+                
+    for para in doc.paragraphs:
+        for key, val in extra_information.items():
+            if key in para.text:
+                para.text = para.text.replace(key, val)
     
 
+    
     # Replace placeholders in the tables of the document
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
                 for para in cell.paragraphs:
                     for run in para.runs:
-                        for key, val in all_replacements.items():
+                        for key, val in replacements.items():
                             if key in run.text and isinstance(val, str):
                                 run.text = run.text.replace(key, val)
+                        for key, val in extra_information.items():
+                            if key in run.text and isinstance(val, str):
+                                run.text = run.text.replace(key, val)
+    
+    for table in doc.tables:
+        for row in table.rows:
+            for cell in row.cells:
+                for key, val in replacements.items():
+                    if key in cell.text:
+                        cell.text = cell.text.replace(key, val)
+                for key, val in extra_information.items():
+                    if key in cell.text:
+                        cell.text = cell.text.replace(key, val)
     
     # Replace images
     for i, para in enumerate(doc.paragraphs):
