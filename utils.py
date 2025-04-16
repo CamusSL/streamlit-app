@@ -4,6 +4,9 @@ from docx_processor import WordProcessor
 import pandas as pd
 from parse_xml import check_consent_from_docx, check_proxima_visita_checkbox
 import io
+import requests
+import io
+from PIL import Image
 
 def process_docx_file(docx_file):
     """
@@ -81,3 +84,39 @@ def process_docx_file(docx_file):
     final_df = final_df.reindex(columns=final_order)
     
     return final_df
+
+
+def get_image_from_gdrive(gdrive_url: str) -> io.BytesIO:
+    """
+    Downloads an image from a Google Drive shared URL and returns it as a BytesIO object.
+
+    Args:
+        gdrive_url (str): The shared Google Drive URL (must be publicly accessible).
+
+    Returns:
+        io.BytesIO: The image in memory as a file-like object.
+    
+    Raises:
+        ValueError: If the file ID cannot be extracted or the download fails.
+    """
+    try:
+        # Extract file ID
+        if "/file/d/" in gdrive_url:
+            file_id = gdrive_url.split("/file/d/")[1].split("/")[0]
+        else:
+            raise ValueError("Invalid Google Drive URL format.")
+
+        # Build direct download URL
+        download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+
+        # Attempt to download the file
+        response = requests.get(download_url)
+        if response.status_code != 200:
+            raise ValueError("Failed to download image from Google Drive.")
+
+        # Return as BytesIO (like st.file_uploader)
+        image_bytes = io.BytesIO(response.content)
+        return image_bytes
+    except Exception as e: # catch other errors
+        print(f"An unexpected error occurred: {e}")
+        return None
