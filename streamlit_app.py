@@ -236,7 +236,7 @@ with tab1:
                     "Descripción secuela": "Descripción secuela",
                     "Descripción de las necesidades": "Descripción de las necesidades",
                     "Descripción del accidente": "Descripción del accidente",
-                    "Tratamiento y evolución. Exploraciones complementarias": "Tratamiento y evolución - processed",
+                    "Tratamiento y evolución. Exploraciones complementarias": "Tratamiento y evolución",
                 }
 
                 # Rename columns

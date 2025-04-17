@@ -77,6 +77,27 @@ def process_docx_file(docx_file):
     # Concatenate all rows into a single DataFrame
     final_df = pd.concat(final_list, ignore_index=True)
     
+    ## NEW CODE ##
+    # Repeat columns
+    # Copy 'Antecedentes médicos del lesionado' from the first row to all other rows
+    if 'Antecedentes médicos del lesionado' in final_df.columns and len(final_df) > 1:
+        # Get the value from the first row
+        antecedentes_value = final_df['Antecedentes médicos del lesionado'].iloc[0]
+        # Copy to all other rows
+        final_df.loc[1:, 'Antecedentes médicos del lesionado'] = antecedentes_value
+    ## END NEW CODE ##
+    
+    ## NEW CODE ##
+    # Unify 'Fecha visita' and 'Fecha de consulta extra' columns
+    if 'Fecha de consulta extra' in final_df.columns and 'Fecha visita' in final_df.columns:
+        # Where 'Fecha de consulta extra' has values, copy them to 'Fecha visita'
+        mask = final_df['Fecha de consulta extra'].notna()
+        final_df.loc[mask, 'Fecha visita'] = final_df.loc[mask, 'Fecha de consulta extra']
+        
+        # Remove the 'Fecha de consulta extra' column
+        final_df = final_df.drop(columns=['Fecha de consulta extra'])
+    ## END NEW CODE ##
+    
     # Reorder columns: first the base columns from doc.df
     base_cols = list(cleaned[0].columns)
     visit_cols_order = [col for col in final_df.columns if col not in base_cols]

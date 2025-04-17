@@ -508,6 +508,20 @@ class WordProcessor:
                 first_visit["Antecedentes médicos del lesionado"] = block[idx + 1] if idx + 1 < len(block) else "-"
             except ValueError:
                 first_visit["Antecedentes médicos del lesionado"] = "-"
+            ## NEW CODE ##
+            # Extract "Descripción del accidente"
+            try:
+                accident_idx = block.index("Descripción del accidente")
+                j = accident_idx + 1
+                accident_parts = []
+                while j < len(block) and block[j] != "Datos asistenciales":
+                    accident_parts.append(block[j])
+                    j += 1
+                accident_text = " ".join(accident_parts)
+                first_visit["Descripción del accidente"] = accident_text
+            except ValueError:
+                first_visit["Descripción del accidente"] = "-"
+            ## END NEW CODE ##
             # Extract treatment using either header.
             treat_idx = None
             treat_header = None
@@ -525,7 +539,7 @@ class WordProcessor:
                 while j < len(block) and block[j] != "Estado actual y exploración física":
                     treatment_parts.append(block[j])
                     j += 1
-                treatment_text = " ".join(treatment_parts)
+                treatment_text = "\n\n".join(treatment_parts)
                 first_visit["Tratamiento y evolución. Exploraciones complementarias"] = treatment_text
                 first_visit["Fecha de consulta extra"] = ""  # Not populated in first visit.
             else:
@@ -539,8 +553,29 @@ class WordProcessor:
                 while j < len(block) and block[j] != "Relación de causalidad":
                     state_parts.append(block[j])
                     j += 1
-                state_text = " ".join(state_parts)
+                state_text = "\n\n".join(state_parts)
                 
+                ## NEW CODE ##
+                # Extract Relación de causalidad
+                if j < len(block) and block[j] == "Relación de causalidad":
+                    j += 1  # Move past the header
+                    causalidad_parts = []
+                    while j < len(block) and block[j] != "Lesiones temporales" and not "(exclusión, cronológico, topográfico, intensidad)" in block[j]:
+                        causalidad_parts.append(block[j])
+                        j += 1
+                    
+                    # Skip the exclusion text line
+                    if j < len(block) and "(exclusión, cronológico, topográfico, intensidad)" in block[j]:
+                        j += 1
+                        # Continue collecting text after the exclusion text until Lesiones temporales
+                        while j < len(block) and block[j] != "Lesiones temporales":
+                            causalidad_parts.append(block[j])
+                            j += 1
+                    
+                    first_visit["Relación de causalidad"] = " ".join(causalidad_parts)
+                else:
+                    first_visit["Relación de causalidad"] = "-"
+                 ## END NEW CODE ##
                 # Initialize with default values
                 first_visit["HISTORIA ACTUAL"] = "-"
                 first_visit["EXPLORACION FISICA"] = "-" 
@@ -607,7 +642,7 @@ class WordProcessor:
                         while j < len(block) and block[j] != "Secuelas. Básico":
                             parts.append(block[j])
                             j += 1
-                        first_visit["Patrimonial. Daño emergente (se indemniza su importe)"] = " ".join(parts) if parts else "-"
+                        first_visit["Patrimonial. Daño emergente (se indemniza su importe)"] = "\n\n".join(parts) if parts else "-"
                         continue # Skip j increment since we already moved forward
                     
                     j += 1
@@ -636,7 +671,7 @@ class WordProcessor:
                     parts.append(block[j])
                     j += 1
                 
-                first_visit["Aclaraciones"] = " ".join(parts) if parts else "-"
+                first_visit["Aclaraciones"] = "\n\n".join(parts) if parts else "-"
                     
             except ValueError:
                 first_visit["Aclaraciones"] = "-"
@@ -676,7 +711,7 @@ class WordProcessor:
                 while j < len(block) and block[j] != "Estado actual y exploración física":
                     treatment_parts.append(block[j])
                     j += 1
-                treatment_text = " ".join(treatment_parts)
+                treatment_text = "\n\n".join(treatment_parts)
                 visit["Tratamiento y evolución. Exploraciones complementarias"] = treatment_text
                 # For "Evolución", use the previous element for "Fecha de consulta extra"
                 if treat_header == "Evolución" and treat_idx > 0:
@@ -763,7 +798,7 @@ class WordProcessor:
                         while j < len(block) and block[j] != "Secuelas. Básico":
                             parts.append(block[j])
                             j += 1
-                        visit["Patrimonial. Daño emergente (se indemniza su importe)"] = " ".join(parts) if parts else "-"
+                        visit["Patrimonial. Daño emergente (se indemniza su importe)"] = "\n\n".join(parts) if parts else "-"
                         continue # Skip j increment since we already moved forward
                     
                     j += 1
@@ -792,7 +827,7 @@ class WordProcessor:
                     parts.append(block[j])
                     j += 1
                 
-                visit["Aclaraciones"] = " ".join(parts) if parts else "-"
+                visit["Aclaraciones"] = "\n\n".join(parts) if parts else "-"
                     
             except ValueError:
                 visit["Aclaraciones"] = "-"
