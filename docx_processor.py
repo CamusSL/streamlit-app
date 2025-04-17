@@ -651,6 +651,37 @@ class WordProcessor:
                 first_visit["Intervenciones quirúrgicas"] = "-"
                 first_visit["Patrimonial. Daño emergente (se indemniza su importe)"] = "-"
             
+            # Extract Valoración Total Secuelas information
+            try:
+                j = 0
+                while j < len(block):
+                    if "Valoración Total Secuelas" in block[j]:
+                        text = block[j]
+                        if ":" in text:
+                            value = text.split(":", 1)[1].strip()
+                            first_visit["Valoración Total Secuelas"] = value if value else "-"
+                            
+                            # Check next line for "Motivos variación"
+                            if j+1 < len(block) and "Motivos variación" in block[j+1]:
+                                motivos_text = block[j+1]
+                                if ":" in motivos_text:
+                                    motivos_value = motivos_text.split(":", 1)[1].strip()
+                                    first_visit["Motivos variación"] = motivos_value if motivos_value else "-"
+                        else:
+                            first_visit["Valoración Total Secuelas"] = "-"
+                        break
+                    j += 1
+                    
+                if "Valoración Total Secuelas" not in first_visit:
+                    first_visit["Valoración Total Secuelas"] = "-"
+                
+                if "Motivos variación" not in first_visit:
+                    first_visit["Motivos variación"] = "-"
+                    
+            except Exception:
+                first_visit["Valoración Total Secuelas"] = "-"
+                first_visit["Motivos variación"] = "-"
+            
             # Extract aclaraciones information
             try:
                 aclaraciones_idx = block.index("Aclaraciones:")
@@ -807,6 +838,37 @@ class WordProcessor:
                 visit["Intervenciones quirúrgicas"] = "-"
                 visit["Patrimonial. Daño emergente (se indemniza su importe)"] = "-"
                 
+            # Extract Valoración Total Secuelas information
+            try:
+                j = 0
+                while j < len(block):
+                    if "Valoración Total Secuelas" in block[j]:
+                        text = block[j]
+                        if ":" in text:
+                            value = text.split(":", 1)[1].strip()
+                            visit["Valoración Total Secuelas"] = value if value else "-"
+                            
+                            # Check next line for "Motivos variación"
+                            if j+1 < len(block) and "Motivos variación" in block[j+1]:
+                                motivos_text = block[j+1]
+                                if ":" in motivos_text:
+                                    motivos_value = motivos_text.split(":", 1)[1].strip()
+                                    visit["Motivos variación"] = motivos_value if motivos_value else "-"
+                        else:
+                            visit["Valoración Total Secuelas"] = "-"
+                        break
+                    j += 1
+                    
+                if "Valoración Total Secuelas" not in visit:
+                    visit["Valoración Total Secuelas"] = "-"
+                
+                if "Motivos variación" not in visit:
+                    visit["Motivos variación"] = "-"
+                    
+            except Exception:
+                visit["Valoración Total Secuelas"] = "-"
+                visit["Motivos variación"] = "-"
+            
             # Extract aclaraciones information
             try:
                 aclaraciones_idx = block.index("Aclaraciones:")

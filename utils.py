@@ -85,6 +85,29 @@ def process_docx_file(docx_file):
         antecedentes_value = final_df['Antecedentes médicos del lesionado'].iloc[0]
         # Copy to all other rows
         final_df.loc[1:, 'Antecedentes médicos del lesionado'] = antecedentes_value
+        
+    # Copy 'Descripción del accidente' from the first row to all other rows
+    if 'Descripción del accidente' in final_df.columns and len(final_df) > 1:
+        # Get the value from the first row
+        descripcion_accidente_value = final_df['Descripción del accidente'].iloc[0]
+        # Copy to all other rows
+        final_df.loc[1:, 'Descripción del accidente'] = descripcion_accidente_value
+        
+    # Copy 'Relación de causalidad' from the first row to all other rows
+    if 'Relación de causalidad' in final_df.columns and len(final_df) > 1:
+        # Get the value from the first row
+        causalidad_value = final_df['Relación de causalidad'].iloc[0]
+        # Copy to all other rows
+        final_df.loc[1:, 'Relación de causalidad'] = causalidad_value
+    ## END NEW CODE ##
+    
+    ## NEW CODE ##
+    # Remove all alpha characters from 'Fecha visita'
+    if 'Fecha visita' in final_df.columns:
+        # Use regex to keep only non-alpha characters (digits, punctuation, spaces)
+        final_df['Fecha visita'] = final_df['Fecha visita'].astype(str).str.replace(r'[a-zA-Z]', '', regex=True)
+        # Clean up any extra spaces that might result
+        final_df['Fecha visita'] = final_df['Fecha visita'].str.strip()
     ## END NEW CODE ##
     
     ## NEW CODE ##
