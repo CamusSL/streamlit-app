@@ -20,13 +20,13 @@ registered_doctors = [
         "doctor_name": "Dra. María Paz Murciano Casas",
         "number": "Médico colegiada Nº 18135 de Sevilla",
         "signature_url": "https://drive.google.com/file/d/1-TTT_cNk_u8QNI_qi1SzNsnLbRcu8NQH/view",
-        "signature_size":1
+        "signature_size":2
     },
     {
         "doctor_name": "Dr.  Antonio Bauzano Poley",
         "number": "Médico colegiado Nº 10757 de Sevilla",
         "signature_url": "https://drive.google.com/file/d/1T5sgXZ0QtT91CKQZuh9HU8QZ_r7rpHKa/view",
-        "signature_size":1
+        "signature_size":2
     },
 ]
 
